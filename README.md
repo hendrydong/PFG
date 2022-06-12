@@ -22,7 +22,7 @@ UCI datasets are downloaded from https://archive.ics.uci.edu/ml/datasets.php.
 For your own data, you can refer to the format of UCI data and establish corresponding dataloader.
 
 
-## Training
+## Sampling tasks
 
 In this repo, we have several examples to demonstrate the effectiveness of our algorithm.
 
@@ -44,7 +44,7 @@ ipython notebook Gaussian_mixture_10.ipynb
 ```
 
 
-### Logistic Regression
+### Bayesian Logistic Regression
 
 For Bayesian Logistic regression, we provide demo for `sonar` dataset, which is already included in `./data`.
 ```
@@ -54,7 +54,7 @@ python bayesian_logistic_regression.py --hdim 32 --inner_iter 5 --num_particles 
 
 ### Bayesian Neural Networks
 
-For Bayesian Neural Networks, we provide demo for `boston_housing` dataset.
+For Bayesian Neural Networks, we provide a demo for `boston_housing` dataset.
 ```
 python bayesian_nn.py --hdim 32 --inner_iter 1 --num_particles 200
 ```
