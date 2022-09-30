@@ -114,7 +114,7 @@ class BayesianNN:
         return log_p
 
 
-def test(model, theta, X_test, y_test):
+def test(model, theta, X_test, y_test, epoch=0):
     prob = model.forward(X_test, theta)
     y_pred = prob.mean(dim=0)  # Average among outputs from different network parameters(particles)
 
@@ -129,7 +129,7 @@ def test(model, theta, X_test, y_test):
 
     rmse = torch.norm(y_pred - y_test) / math.sqrt(y_test.shape[0])
 
-    print("RMSE: {}, LL: {}".format(rmse,log_p_data))
+    print("Epoch: {} RMSE: {}, LL: {}".format(epoch,rmse,log_p_data))
 
 
 def main():
@@ -201,10 +201,10 @@ def main():
         trainer.H = op1.avg**args.H_coef
         if epoch % 100 == 0:
 
-            test(model, theta, X_test, y_test)
+            test(model, theta, X_test, y_test,epoch)
 
 
-    test(model, theta, X_test, y_test)
+    test(model, theta, X_test, y_test,epoch)
 
 
 if __name__ == '__main__':

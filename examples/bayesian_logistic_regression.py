@@ -160,10 +160,11 @@ def main():
                 l1.append(mmd(theta,sample,[10**(-i) for i in range(4)]).log().item())
                 l2.append(np.sum(X_np.mean(0)-mean)**2)
                 l3.append(elbo(theta,X_np,gaussian_kde(X_np.T,1),model))
-                print(epoch,l1[-1],l2[-1],l3[-1])
+                print('Epoch:%d\t logMMD:%.3f\t Mean distance:%.3f\t ELBO:%.3f\t'%(epoch,l1[-1],l2[-1],l3[-1]))
             else:
                 l3.append(elbo(theta,X_np,gaussian_kde(X_np.T,1),model))
-                print(epoch,l3[-1])
+                print('Epoch:%d\t ELBO:%.3f\t'%(epoch,l3[-1]))
+                
             
             t1 = t2
 
