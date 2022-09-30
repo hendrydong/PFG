@@ -13,9 +13,11 @@ from torch import nn
 from sklearn.datasets import load_svmlight_file
 from scipy.sparse import csr_matrix
 import time
-from alg.precondition import Pred
-from tasks import *
-from alg import pfg
+import sys
+sys.path.append('../')
+from src.precondition import Pred
+from src.tasks import BayesianLR
+from src import pfg
 import argparse
 from torch_two_sample.statistics_diff import MMDStatistic
 
@@ -23,6 +25,15 @@ from torch_two_sample.statistics_diff import MMDStatistic
 parser = argparse.ArgumentParser('Bayesian Logistic Regression')
 parser.add_argument(
     '--data', type=str, default='sonar_scale.txt'
+)
+parser.add_argument(
+    '--gt', type=int, default=1,
+) # provide ground truth if possible
+parser.add_argument(
+    '--posterior_sample', type=str, default='sonar_sample.npy'
+)
+parser.add_argument(
+    '--posterior_mean', type=str, default='sonar_mean.npy'
 )
 
 parser.add_argument('--hdim', type=int, default=32)
@@ -46,11 +57,16 @@ args = parser.parse_args()
 
 
 
-mean = np.load('sonar_mean.npy')
 
 mmd = MMDStatistic(200,4000)
 
-sample = torch.from_numpy(np.load('sonar_sample.npy')).float()
+
+if args.gt:
+    mean = np.load("../data/"+args.posterior_mean)
+    sample = torch.from_numpy(np.load("../data/"+args.posterior_sample)).float()
+else:
+    mean,sample = None,None
+
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -73,22 +89,9 @@ from scipy.stats import gaussian_kde
 
 def elbo(trc_em_sample,em_sample, em_kde_distrib, targ):
     kl = np.log(em_kde_distrib(em_sample.transpose())).mean()
-    print('log posterior density',kl)
+    #print('log posterior density',kl)
     kl -= targ.log_prob(trc_em_sample).mean().item()
     return kl
-
-
-
-ece_cri = ExpectedCalibrationErrorSigmoid()
-def test(theta, X_test, y_test):
-    model_w = theta
-    logits = torch.matmul(X_test, model_w.t())
-    prob = torch.sigmoid(logits).mean(dim=1)  # Average among outputs from different network parameters(particles)
-    pred = torch.round(prob)
-    ll = torch.log(prob[y_test==1]).sum() + torch.log(1-prob[y_test==0]).sum()
-    acc = torch.mean((pred.eq(y_test)).float())
-    ece_o = ece_cri(prob,y_test)
-    print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
 
 
 
@@ -98,7 +101,7 @@ def main():
     l1 = []
     l2 = []
     l3 = []
-    X,y = load_svmlight_file("./data/"+args.data)
+    X,y = load_svmlight_file("../data/"+args.data)
     #print(y)
     #raise
     #scipy.io.loadmat('data/covertype.mat')
@@ -118,10 +121,9 @@ def main():
         batch_size = X_train.shape[0]
 
     
-    #net = ResNN().to(device)
-    
+
     activation = nn.Sigmoid()#nn.Softsign()#nn.Tanh()
-    #net = ResNN().to(device)
+
     net = nn.Sequential(nn.Linear(n_features,h),activation,nn.Linear(h,h),activation,nn.Linear(h,n_features)).to(device)
     #net = nn.Linear(n_features+1,n_features+1).to(device)
 
@@ -136,40 +138,34 @@ def main():
         op1 = Pred([theta], lr=lr0,exp_alpha=args.exp_alpha)
     else:
         op1 = Adam([theta], lr=lr0,betas = (0,0.999))
-    op2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9,nesterov=1)#optim.SGD(net.parameters(), lr=1e-3, momentum=0.9,nesterov=1)
+    op2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9,nesterov=1)
     trainer = pfg.PFG(model,net,op1,op2,dim = X.shape[1],f0_coef = args.f0_coef, inner_iter = args.inner_iter, H = None, exact_div = False)
  
 
     for _ in range(args.warmup_iteration):
         trainer.score_step(theta)
     trainer.optim2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9,nesterov=1)
-    #optim.SGD(net.parameters(), lr=1e-3, momentum=0.9,nesterov=1)
 
-    ITERATION=args.iteration + 1
+    ITERATION = args.iteration + 1
 
-    #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(op1, T_max=ITERATION+1)
     t1=time.time()
     for epoch in range(ITERATION+1):
 
         trainer.step(theta)
-            
-
-
- 
+             
         if epoch % 100 == 0:
             t2 = time.time()
-            #print(torch.mean(theta,0))
-            #print(torch.std(theta,0))
-
             X_np = theta.cpu().numpy()
+            if args.gt:
+                l1.append(mmd(theta,sample,[10**(-i) for i in range(4)]).log().item())
+                l2.append(np.sum(X_np.mean(0)-mean)**2)
+                l3.append(elbo(theta,X_np,gaussian_kde(X_np.T,1),model))
+                print(epoch,l1[-1],l2[-1],l3[-1])
+            else:
+                l3.append(elbo(theta,X_np,gaussian_kde(X_np.T,1),model))
+                print(epoch,l3[-1])
             
-            l1.append(mmd(theta,sample,[10**(-i) for i in range(4)]).log().item())
-            l2.append(np.sum(X_np.mean(0)-mean)**2)
-            l3.append(elbo(theta,X_np,gaussian_kde(X_np.T,1),model))
-            print(epoch,l1[-1],l2[-1],l3[-1])
-
             t1 = t2
-
 
 if __name__ == '__main__':
     main()

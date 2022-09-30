@@ -1,4 +1,4 @@
-# PFG
+# ParticleVI
 
 > This repository contains the codes for [Particle-based Variational Inference with Preconditioned Functional Gradient Flow]()  
 by Hanze Dong, Xi Wang, Yong Lin, Tong Zhang.
@@ -30,7 +30,7 @@ In this repo, we have several examples to demonstrate the effectiveness of our a
 
 For ill-conditioned Gaussian distribution, we show that the preconditioning matters in the sampling algorithm, which accelerate the convergence significantly.
 ```
-cd toy_examples
+cd examples
 ipython notebook ill_Gaussian.ipynb
 ```
 
@@ -39,7 +39,7 @@ ipython notebook ill_Gaussian.ipynb
 
 For Gaussian Mixture Model, the function class of our model is more powerful than kernel function class, due to the non-linearity included.
 ```
-cd toy_examples
+cd examples
 ipython notebook Gaussian_mixture_10.ipynb
 ```
 
@@ -48,6 +48,7 @@ ipython notebook Gaussian_mixture_10.ipynb
 
 For Bayesian Logistic regression, we provide demo for `sonar` dataset, which is already included in `./data`.
 ```
+cd examples
 python bayesian_logistic_regression.py --hdim 32 --inner_iter 5 --num_particles 200
 ```
 
@@ -56,6 +57,7 @@ python bayesian_logistic_regression.py --hdim 32 --inner_iter 5 --num_particles 
 
 For Bayesian Neural Networks, we provide a demo for `boston_housing` dataset.
 ```
+cd examples
 python bayesian_nn.py --hdim 32 --inner_iter 1 --num_particles 200
 ```
 

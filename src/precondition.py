@@ -43,7 +43,7 @@ class Pred(Optimizer):
                 state['step'] += 1
                 if group['exp_alpha']>0:
                     # sqavg x alpha + (1-alph) sqavg *(elemwise) sqavg
-                    square_avg.mul_(alpha).addcmul_(1-alpha, d_p, d_p)
+                    square_avg.mul_(alpha).addcmul_( d_p, d_p,value=1-alpha)
                     
                     if group['centered']:
                         grad_avg = state['grad_avg']
@@ -56,10 +56,10 @@ class Pred(Optimizer):
                     avg = torch.mean(avg,0).reshape(1,-1)
 
 
-                    p.data.addcdiv_(-group['lr'], d_p, avg**(group['exp_alpha']*2))
+                    p.data.addcdiv_(d_p, avg**(group['exp_alpha']*2),value=-group['lr'])
                     self.avg = avg
                 else:
-                    p.data.add_(-group['lr'], d_p)
+                    p.data.add_(d_p,alpha=-group['lr'])
 
                 
 

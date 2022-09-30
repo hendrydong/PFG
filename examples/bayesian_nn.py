@@ -7,14 +7,19 @@ from torch.optim import Adam
 from torch.distributions import Normal
 from torch.distributions.gamma import Gamma
 from sklearn.model_selection import train_test_split
-from alg.svgd import get_gradient
+
 from torch import nn
 import torch.nn.functional as F
 import argparse
 from torch import optim
 from torch.optim import Adam
-from alg import pfg
-from alg.precondition import Pred
+import sys
+
+sys.path.append('../')
+from src.svgd import get_gradient
+from src import pfg
+from src.precondition import Pred
+
 import pandas
 
 parser = argparse.ArgumentParser('Bayesian Neural Network')
@@ -113,8 +118,6 @@ def test(model, theta, X_test, y_test):
     prob = model.forward(X_test, theta)
     y_pred = prob.mean(dim=0)  # Average among outputs from different network parameters(particles)
 
-    print(y_pred)
-    print(y_test)
     model_gamma = torch.exp(theta[:, -2])
 
     prob = []
@@ -125,31 +128,31 @@ def test(model, theta, X_test, y_test):
 
 
     rmse = torch.norm(y_pred - y_test) / math.sqrt(y_test.shape[0])
-    #ll = rmse * gamma
+
     print("RMSE: {}, LL: {}".format(rmse,log_p_data))
 
 
 def main():
     if data_name =='boston':
-        data = np.loadtxt('data/boston_housing')
+        data = np.loadtxt('../data/boston_housing')
     elif data_name =='concrete':
-        data = pandas.read_excel('data/Concrete_Data.xls').values
+        data = pandas.read_excel('../data/Concrete_Data.xls').values
     elif data_name =='energy':
-        data = pandas.read_excel("data/ENB2012_data.xlsx").values
+        data = pandas.read_excel("../data/ENB2012_data.xlsx").values
         data = data[:, :-1]
     elif data_name =='naval':
-        data = pandas.read_fwf('./data/UCI CBM Dataset/data.txt', header=None).values
+        data = pandas.read_fwf('../data/UCI CBM Dataset/data.txt', header=None).values
         data = data[:, :-1]
     elif data_name=="wine_red":
-        data = pandas.read_csv("data/winequality-red.csv", delimiter=';').values
+        data = pandas.read_csv("../data/winequality-red.csv", delimiter=';').values
     elif data_name=="wine_white":
-        data = pandas.read_csv("data/winequality-white.csv", delimiter=';').values
+        data = pandas.read_csv("../data/winequality-white.csv", delimiter=';').values
     elif data_name=="yacht":
-        data = pandas.read_csv("data/yacht_hydrodynamics.data",delim_whitespace=True).values
+        data = pandas.read_csv("../data/yacht_hydrodynamics.data",delim_whitespace=True).values
     elif data_name=="year":
-        data = pandas.read_csv("data/YearPredictionMSD.txt",delimiter=',').values
+        data = pandas.read_csv("../data/YearPredictionMSD.txt",delimiter=',').values
     elif data_name=="protein":
-        data = pandas.read_csv("data/CASP.csv").values
+        data = pandas.read_csv("../data/CASP.csv").values
         data = np.concatenate([data[:, 1:], data[:, 0, None]], 1)
     X, y = data[:, :-1], data[:, -1]
     X = torch.from_numpy(X).float().to(device)
@@ -193,11 +196,8 @@ def main():
 
     ITERATION = args.iteration + 1
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(op1, T_max=ITERATION+1)
-    for epoch in range(ITERATION+1):
-        
+    for epoch in range(ITERATION+1):    
         trainer.step(theta)
-        #scheduler.step()
         trainer.H = op1.avg**args.H_coef
         if epoch % 100 == 0:
 
