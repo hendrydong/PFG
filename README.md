@@ -1,4 +1,4 @@
-# ParticleVI
+# PFG: Preconditioned Functional Gradient Flow
 
 > This repository contains the codes for [Particle-based Variational Inference with Preconditioned Functional Gradient Flow]()  
 by Hanze Dong, Xi Wang, Yong Lin, Tong Zhang.
