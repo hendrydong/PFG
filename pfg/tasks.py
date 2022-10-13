@@ -9,9 +9,17 @@ from torch.distributions.gamma import Gamma
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_svmlight_file
 from scipy.sparse import csr_matrix
-import time
-import urllib
-import io
+import torch.nn.functional as F
+
+
+class tasks:
+    def __init__(self,X_train, y_train, batch_size, num_particles, **kwargs) -> None:
+        pass
+
+    def log_prob(self, theta):
+        raise NotImplementedError
+
+
 
 
 class BayesianLR:
@@ -36,9 +44,6 @@ class BayesianLR:
             X_batch = self.X_train[random_idx]
             y_batch = self.y_train[random_idx]          
             
-
-        # Reference https://github.com/wsjeon/SVGD/blob/master/derivations/bayesian_classification.pdf
-        # See why we can make use of binary classification loss to represent log_p_data
         logits = torch.matmul(X_batch, model_w.t())
         y_batch_repeat = y_batch.unsqueeze(1).repeat(1, self.num_particles)  # make y the same shape as logits
         log_p_data = Bernoulli(logits=logits).log_prob(y_batch_repeat).sum(0)
@@ -62,6 +67,8 @@ class BNN:
         self.hidden_unit = hidden_unit
     
     def log_prob(self, theta):
+        if type(theta)==list:
+            theta = theta[0]
         w1, w2 = self._flatten_param(theta)
         p_w1 = Normal(torch.zeros_like(w1), torch.ones_like(w1))
         p_w2 = Normal(torch.zeros_like(w2), torch.ones_like(w2))
@@ -96,100 +103,6 @@ class BNN:
         w2_len = self.hidden_unit
         return w1_len + w2_len
 
-
-
-def getGermanCreditData():
-    url = ('http://archive.ics.uci.edu/ml/machine-learning-databases/'
-               'statlog/german/german.data-numeric')
-    url = urllib.request.urlopen(url)
-    try:
-        raw_data = url.read()
-    finally:
-        url.close()
-    a = np.genfromtxt(io.BytesIO(raw_data), delimiter=4)[:, :25]
-
-    # get output
-    y = a[:, -1]
-    y[y == 1] = 0
-    y[y == 2] = 1
-
-    # get inputs and standardise
-    x = a[:, :-1]
-    x = scipy.stats.zscore(x)
-    x1 = np.zeros((x.shape[0], x.shape[1] + 1))
-    x1[:, 0] = np.ones(x.shape[0])
-    x1[:, 1:] = x
-    x = np.copy(x1)
-    x = x[:, 1:]
-    z = np.zeros((1000, 325))
-    zz = np.zeros((z.shape[0], 300))
-    k = 0
-    for i in range(x.shape[1]):
-        for j in range(i, x.shape[1]):
-            zz[:, k] = np.transpose(x[:, i] * x[:, j])
-            k += 1
-    zz = np.column_stack([x, zz])
-    z[:, 0] = np.ones(1000)
-    z[:, 1:] = zz
-    
-    return z.astype('float32'), y.astype('float32')
-
-
-class GermanCreditLR():
-    def __init__(self, X, y, lamb=0.01):
-        self._z = X
-        self._y = y
-        self._N = X.shape[0]
-        self._lambda = lamb
-
-    def log_prob(self, param):
-        sigma = torch.exp(param[:, 0])
-        beta = param[:, 1:]
-        sigma_sq = sigma**2
-        logit = torch.matmul(self._z, beta.T).T
-        observe_log_prob = torch.distributions.Bernoulli(logits=logit).log_prob(self._y).sum(-1)
-        w_log_prob = torch.distributions.Normal(torch.zeros_like(beta),
-                torch.ones_like(beta) * sigma[:, None]).log_prob(beta).sum(-1)
-
-        sigma_log_prob = torch.distributions.Gamma(1, 0.01).log_prob(sigma_sq)
-        #torch.distributions.Exponential(self._lambda).log_prob(sigma_sq)
-        return observe_log_prob + w_log_prob + sigma_log_prob
-
-
-class ExpectedCalibrationError:
-    """Returns the expected calibration error for a given bin size.
-    Args:
-        y_proba (tensor): Tensor containing returned class probabilities. (NxC)
-        y (tensor): Tensor containing integers which corresponds to classes. (Cx1)
-    Returns:
-       tensor: The expected calibration error
-    Code is based on https://github.com/gpleiss/temperature_scaling.
-    """
-
-    def __init__(self, n_bins=5, **kwargs):
-        super().__init__(**kwargs)
-        bin_boundaries = torch.linspace(0, 1, n_bins + 1)
-        self.bin_lowers = bin_boundaries[:-1]
-        self.bin_uppers = bin_boundaries[1:]
-
-    def __call__(self, y_proba, y):
-        # device = y_proba.device
-        n_samples = y.size(0)
-        y_conf, y_pred = y_proba.max(-1)
-
-        # Eq. 3 from Guo paper
-        ece = 0
-        for bin_lower, bin_upper in zip(self.bin_lowers, self.bin_uppers):
-            idx_bin = (y_conf > bin_lower) & (y_conf <= bin_upper)
-            n_bin = sum(idx_bin).float()
-
-            if n_bin > 0:
-                acc_bin = torch.mean((y_pred[idx_bin] == y[idx_bin]).float())
-                mean_conf_bin = torch.mean(y_conf[idx_bin])
-
-                ece += n_bin * torch.abs(acc_bin - mean_conf_bin)
-
-        return ece.item()/n_samples
 
 class ExpectedCalibrationErrorSigmoid:
     """Returns the expected calibration error for a given bin size.
@@ -254,3 +167,61 @@ def test_hir(theta, X_test, y_test):
     ece_o = ece_cri(prob,y_test)
     print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
 
+
+
+
+class BayesianNN:
+    def __init__(self, X_train, y_train, batch_size, num_particles, hidden_dim, device='cpu'):
+        self.gamma_prior = Gamma(torch.tensor(1., device=device),
+                                 torch.tensor(1 / 0.1, device=device))
+        self.lambda_prior = Gamma(torch.tensor(1., device=device),
+                                  torch.tensor(1 / 0.1, device=device))
+        self.X_train = X_train
+        self.y_train = y_train
+        self.batch_size = batch_size
+        self.num_particles = num_particles
+        self.n_features = X_train.shape[1]
+        self.hidden_dim = hidden_dim
+
+    def forward(self, inputs, theta):
+        # Unpack theta
+        w1 = theta[:, 0:self.n_features *
+                   self.hidden_dim].reshape(-1, self.n_features, self.hidden_dim)
+        b1 = theta[:, self.n_features *
+                   self.hidden_dim:(self.n_features + 1) * self.hidden_dim].unsqueeze(1)
+        w2 = theta[:, (self.n_features + 1) * self.hidden_dim:(self.n_features + 2)
+                   * self.hidden_dim].unsqueeze(2)
+        b2 = theta[:, -3].reshape(-1, 1, 1)
+        # log_gamma, log_lambda = theta[-2], theta[-1]
+
+        # num_particles times of forward
+        inputs = inputs.unsqueeze(0).repeat(self.num_particles, 1, 1)
+        inter = F.relu(torch.bmm(inputs, w1) + b1)
+        out = torch.bmm(inter, w2) + b2
+        out = out.squeeze()
+        return out
+
+    def log_prob(self, theta):
+        if type(theta)==list:
+            theta = theta[0]
+        model_gamma = torch.exp(theta[:, -2])
+        model_lambda = torch.exp(theta[:, -1])
+        model_w = theta[:, :-2]
+        # w_prior should be decided based on current lambda (not sure)
+        w_prior = Normal(0, torch.sqrt(torch.ones_like(model_lambda) / model_lambda))
+
+        random_idx = random.sample([i for i in range(self.X_train.shape[0])], self.batch_size)
+        X_batch = self.X_train[random_idx]
+        y_batch = self.y_train[random_idx]
+
+        outputs = self.forward(X_batch, theta)  # [num_particles, batch_size]
+        model_gamma_repeat = model_gamma.unsqueeze(1).repeat(1, self.batch_size)
+        y_batch_repeat = y_batch.unsqueeze(0).repeat(self.num_particles, 1)
+        distribution = Normal(outputs, torch.sqrt(
+            torch.ones_like(model_gamma_repeat) / model_gamma_repeat))
+        log_p_data = distribution.log_prob(y_batch_repeat).sum(dim=1)
+
+        log_p0 = w_prior.log_prob(model_w.t()).sum(dim=0) + self.gamma_prior.log_prob(
+            model_gamma) + self.lambda_prior.log_prob(model_lambda)
+        log_p = log_p0 + log_p_data * (self.X_train.shape[0] / self.batch_size)  # (8) in paper
+        return log_p

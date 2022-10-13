@@ -5,7 +5,23 @@ import numpy as np
 
 
 class Pred(Optimizer):
+    """
+    Implement Preconditioned algorithm with Pytorch Optimizer class.
+    The main difference of Pred and Adam/Adagrad is that Pred use a constant Hessian estimator at each step,
+    while Adam/Adagrad estimate Hessian for each input x.
 
+    Args:
+        params: iterable of parameters to optimize or dicts defining
+            parameter groups or tensor
+        lr (float): learning rate
+        alpha (float, optional): smoothing constant (default: 0.99)
+        eps (float, optional): term added to the denominator to improve
+            numerical stability (default: 1e-8)
+        centered (bool, optional) : if ``True``, compute the centered RMSProp,
+            the gradient is normalized by an estimation of its variance
+        exp_alpha (float): the exponent of Hessian (diagonal) estimator to perform preconditioning
+        alpha (float): decay coefficient of approximator output.
+    """
 
     def __init__(self, params, lr=required, alpha=0.99, eps=1e-8, centered=False, exp_alpha=0.5):
         defaults = dict(lr=lr, alpha=alpha, eps=eps, centered=centered, exp_alpha=exp_alpha)
@@ -64,3 +80,9 @@ class Pred(Optimizer):
                 
 
         return loss
+
+
+
+
+Adam = torch.optim.Adam # support Adam algorithm in torch
+

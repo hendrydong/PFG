@@ -15,9 +15,9 @@ from scipy.sparse import csr_matrix
 import time
 import sys
 sys.path.append('../')
-from src.precondition import Pred
-from src.tasks import BayesianLR
-from src import pfg
+from pfg.precondition import Pred
+from pfg.tasks import BayesianLR
+from pfg import sampler
 import argparse
 from torch_two_sample.statistics_diff import MMDStatistic
 
@@ -77,8 +77,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
 sigma0 = args.sigma0
 
-lr = args.lr_f
-lr0 = args.lr
+
 h = args.hdim
 N = args.inner_iter
 num_particles = args.num_particles
@@ -89,7 +88,6 @@ from scipy.stats import gaussian_kde
 
 def elbo(trc_em_sample,em_sample, em_kde_distrib, targ):
     kl = np.log(em_kde_distrib(em_sample.transpose())).mean()
-    #print('log posterior density',kl)
     kl -= targ.log_prob(trc_em_sample).mean().item()
     return kl
 
@@ -102,10 +100,6 @@ def main():
     l2 = []
     l3 = []
     X,y = load_svmlight_file("../data/"+args.data)
-    #print(y)
-    #raise
-    #scipy.io.loadmat('data/covertype.mat')
-    #X, y = data['covtype'][:, 1:], data['covtype'][:, 0]
     y[y == -1] = 0  # y in {1,2} -> y in {1,0}
     X = csr_matrix.toarray(X)
     X = np.hstack([X, np.ones([X.shape[0], 1])])  # add constant
@@ -125,33 +119,26 @@ def main():
     activation = nn.Sigmoid()#nn.Softsign()#nn.Tanh()
 
     net = nn.Sequential(nn.Linear(n_features,h),activation,nn.Linear(h,h),activation,nn.Linear(h,n_features)).to(device)
-    #net = nn.Linear(n_features+1,n_features+1).to(device)
 
-
-
-
-    # random initialization (expectation of alpha is 0.01)
     theta = torch.zeros([num_particles, n_features], device=device).normal_(0, sigma0**0.5)
 
     model = BayesianLR(X_train, y_train, batch_size, num_particles,sigma = args.sigma0,device=device)
     if not args.adam:
-        op1 = Pred([theta], lr=lr0,exp_alpha=args.exp_alpha)
+        opt = "pred"
     else:
-        op1 = Adam([theta], lr=lr0,betas = (0,0.999))
-    op2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9,nesterov=1)
-    trainer = pfg.PFG(model,net,op1,op2,dim = X.shape[1],f0_coef = args.f0_coef, inner_iter = args.inner_iter, H = None, exact_div = False)
+        opt = "adam"
+    
+    trainer = sampler.PFG(theta, args.lr, net, optim = opt, f_lr = args.lr_f, f_optim = "sgd", f0_coef = args.f0_coef, \
+                            inner_iter = args.inner_iter, exact_div = False, exp_alpha = args.exp_alpha)
  
-
-    for _ in range(args.warmup_iteration):
-        trainer.score_step(theta)
-    trainer.optim2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9,nesterov=1)
+    trainer.init_approximator(model, args.warmup_iteration)
 
     ITERATION = args.iteration + 1
 
     t1=time.time()
     for epoch in range(ITERATION+1):
-
-        trainer.step(theta)
+        trainer.compute_grad(model)
+        trainer.step()
              
         if epoch % 100 == 0:
             t2 = time.time()

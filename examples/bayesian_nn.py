@@ -16,9 +16,9 @@ from torch.optim import Adam
 import sys
 
 sys.path.append('../')
-from src.svgd import get_gradient
-from src import pfg
-from src.precondition import Pred
+from pfg.tasks import BayesianNN
+from pfg import sampler
+from pfg.precondition import Pred
 
 import pandas
 
@@ -58,60 +58,6 @@ num_particles = args.num_particles
 data_name = args.data
 
 
-
-class BayesianNN:
-    def __init__(self, X_train, y_train, batch_size, num_particles, hidden_dim):
-        self.gamma_prior = Gamma(torch.tensor(1., device=device),
-                                 torch.tensor(1 / 0.1, device=device))
-        self.lambda_prior = Gamma(torch.tensor(1., device=device),
-                                  torch.tensor(1 / 0.1, device=device))
-        self.X_train = X_train
-        self.y_train = y_train
-        self.batch_size = batch_size
-        self.num_particles = num_particles
-        self.n_features = X_train.shape[1]
-        self.hidden_dim = hidden_dim
-
-    def forward(self, inputs, theta):
-        # Unpack theta
-        w1 = theta[:, 0:self.n_features *
-                   self.hidden_dim].reshape(-1, self.n_features, self.hidden_dim)
-        b1 = theta[:, self.n_features *
-                   self.hidden_dim:(self.n_features + 1) * self.hidden_dim].unsqueeze(1)
-        w2 = theta[:, (self.n_features + 1) * self.hidden_dim:(self.n_features + 2)
-                   * self.hidden_dim].unsqueeze(2)
-        b2 = theta[:, -3].reshape(-1, 1, 1)
-        # log_gamma, log_lambda = theta[-2], theta[-1]
-
-        # num_particles times of forward
-        inputs = inputs.unsqueeze(0).repeat(self.num_particles, 1, 1)
-        inter = F.relu(torch.bmm(inputs, w1) + b1)
-        out = torch.bmm(inter, w2) + b2
-        out = out.squeeze()
-        return out
-
-    def log_prob(self, theta):
-        model_gamma = torch.exp(theta[:, -2])
-        model_lambda = torch.exp(theta[:, -1])
-        model_w = theta[:, :-2]
-        # w_prior should be decided based on current lambda (not sure)
-        w_prior = Normal(0, torch.sqrt(torch.ones_like(model_lambda) / model_lambda))
-
-        random_idx = random.sample([i for i in range(self.X_train.shape[0])], self.batch_size)
-        X_batch = self.X_train[random_idx]
-        y_batch = self.y_train[random_idx]
-
-        outputs = self.forward(X_batch, theta)  # [num_particles, batch_size]
-        model_gamma_repeat = model_gamma.unsqueeze(1).repeat(1, self.batch_size)
-        y_batch_repeat = y_batch.unsqueeze(0).repeat(self.num_particles, 1)
-        distribution = Normal(outputs, torch.sqrt(
-            torch.ones_like(model_gamma_repeat) / model_gamma_repeat))
-        log_p_data = distribution.log_prob(y_batch_repeat).sum(dim=1)
-
-        log_p0 = w_prior.log_prob(model_w.t()).sum(dim=0) + self.gamma_prior.log_prob(
-            model_gamma) + self.lambda_prior.log_prob(model_lambda)
-        log_p = log_p0 + log_p_data * (self.X_train.shape[0] / self.batch_size)  # (8) in paper
-        return log_p
 
 
 def test(model, theta, X_test, y_test, epoch=0):
@@ -181,24 +127,20 @@ def main():
     net = nn.Sequential(nn.Linear(n_features, h), activation, nn.Linear(h, h),
                         activation, nn.Linear(h, n_features)).to(device)
     if not args.adam:
-        op1 = Pred([theta], lr=lr0, exp_alpha=args.exp_alpha)
+        opt = "pred"
     else:
-        op1 = Adam([theta], lr=lr0, betas=(0, 0.999))
-    
-    op2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9, nesterov=1)
-    trainer = pfg.PFG(
-        model, net, op1, op2, dim=theta.shape[1], f0_coef=args.f0_coef,
-        inner_iter=args.inner_iter, H=None, exact_div=False)
+        opt = "adam"
+    trainer = sampler.PFG(theta, args.lr, net, optim = opt, f_lr = args.lr_f, f_optim = "sgd", f0_coef = args.f0_coef, \
+                            inner_iter = args.inner_iter, exact_div = False, exp_alpha = args.exp_alpha)
+ 
+    trainer.init_approximator(model, args.warmup_iteration)
 
-    for _ in range(args.warmup_iteration):
-        trainer.score_step(theta)
-    trainer.optim2 = optim.SGD(net.parameters(), lr=lr, momentum=0.9, nesterov=1)
 
     ITERATION = args.iteration + 1
 
     for epoch in range(ITERATION+1):    
-        trainer.step(theta)
-        trainer.H = op1.avg**args.H_coef
+        trainer.compute_grad(model)
+        trainer.step()
         if epoch % 100 == 0:
 
             test(model, theta, X_test, y_test,epoch)
