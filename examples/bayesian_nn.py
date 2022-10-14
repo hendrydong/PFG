@@ -60,23 +60,6 @@ data_name = args.data
 
 
 
-def test(model, theta, X_test, y_test, epoch=0):
-    prob = model.forward(X_test, theta)
-    y_pred = prob.mean(dim=0)  # Average among outputs from different network parameters(particles)
-
-    model_gamma = torch.exp(theta[:, -2])
-
-    prob = []
-    
-    model_gamma_repeat = model_gamma.unsqueeze(1).repeat(1, y_pred.shape[0])
-    distribution = Normal(y_pred, torch.sqrt(torch.ones_like(model_gamma_repeat) / model_gamma_repeat))
-    log_p_data = ((distribution.log_prob(y_test).exp().mean(0)).log()).mean()
-
-
-    rmse = torch.norm(y_pred - y_test) / math.sqrt(y_test.shape[0])
-
-    print("Epoch: {} RMSE: {}, LL: {}".format(epoch,rmse,log_p_data))
-
 
 def main():
     if data_name =='boston':
@@ -143,10 +126,11 @@ def main():
         trainer.step()
         if epoch % 100 == 0:
 
-            test(model, theta, X_test, y_test,epoch)
+            rmse,log_p_data = model.test(theta, X_test, y_test)
+            print("Epoch: {} RMSE: {}, LL: {}".format(epoch, rmse,log_p_data))
 
-
-    test(model, theta, X_test, y_test,epoch)
+    rmse,log_p_data = model.test(theta, X_test, y_test)
+    print("Epoch: {} RMSE: {}, LL: {}".format(epoch, rmse,log_p_data))
 
 
 if __name__ == '__main__':

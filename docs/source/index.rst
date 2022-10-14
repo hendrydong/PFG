@@ -18,7 +18,8 @@ Intro
 .. autosummary::
   :toctree: _autosummary
 
-    pfg.sgld
+   pfg.tasks
+   pfg.sampler
 
 API
 ===

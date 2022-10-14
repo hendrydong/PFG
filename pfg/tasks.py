@@ -1,3 +1,4 @@
+from turtle import forward
 import torch
 import numpy as np
 import random
@@ -10,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_svmlight_file
 from scipy.sparse import csr_matrix
 import torch.nn.functional as F
-
+import math
 
 class tasks:
     def __init__(self,X_train, y_train, batch_size, num_particles, **kwargs) -> None:
@@ -55,95 +56,10 @@ class BayesianLR:
         return log_p
 
 
-class BNN:
-    '''
-    A two-layer BNN with N(0,1) prior
-    '''
-    def __init__(self, X_train, y_train, batch_size, num_particles, hidden_unit=256, device='cpu') -> None:
-        self.X_train =X_train
-        self.y_train = y_train.squeeze()
-        self.batch_size = batch_size
-        self.num_particles = num_particles
-        self.hidden_unit = hidden_unit
-    
-    def log_prob(self, theta):
-        if type(theta)==list:
-            theta = theta[0]
-        w1, w2 = self._flatten_param(theta)
-        p_w1 = Normal(torch.zeros_like(w1), torch.ones_like(w1))
-        p_w2 = Normal(torch.zeros_like(w2), torch.ones_like(w2))
-        y_pred = self._forward(self.X_train, w1, w2)
-        py = Normal(y_pred, 1.0)
-        ll = (p_w1.log_prob(w1).sum([-1,-2]) + p_w2.log_prob(w2).sum(-1) +
-            py.log_prob(self.y_train[None,:]).sum(-1))
-        return ll
-
-    def _forward(self, X, w1, w2):
-        z1 = torch.einsum('ij,kju->kiu', X, w1) # (num_particle, batch_size, hidden_unit)
-        z1 = torch.relu(z1)
-        z2 = torch.einsum('ijk,ik->ij', z1, w2)
-        return z2 # (num_particle, batch_size)
-    
-    def get_bma(self, X, theta):
-        w1, w2 = self._flatten_param(theta)
-        return self._forward(X, w1, w2).mean(0)
-
-    def _flatten_param(self, theta):
-        w1_len = self.X_train.shape[1] * self.hidden_unit
-        w1_shape = (self.X_train.shape[1], self.hidden_unit)
-        w2_len = self.hidden_unit
-        w2_shape = (self.hidden_unit,)
-        return (
-            theta[:, :w1_len].reshape(-1, *w1_shape),
-            theta[:, w1_len:].reshape(-1, *w2_shape)
-        )
-    
-    def get_particle_size(self):
-        w1_len = self.X_train.shape[1] * self.hidden_unit
-        w2_len = self.hidden_unit
-        return w1_len + w2_len
 
 
-class ExpectedCalibrationErrorSigmoid:
-    """Returns the expected calibration error for a given bin size.
-    Args:
-        y_proba (tensor): Tensor containing returned class probabilities. (NxC)
-        y (tensor): Tensor containing integers which corresponds to classes. (Cx1)
-    Returns:
-       tensor: The expected calibration error
-    Code is based on https://github.com/gpleiss/temperature_scaling.
-    """
-
-    def __init__(self, n_bins=5, **kwargs):
-        super().__init__(**kwargs)
-        bin_boundaries = torch.linspace(0, 1, n_bins + 1)
-        self.bin_lowers = bin_boundaries[:-1]
-        self.bin_uppers = bin_boundaries[1:]
-
-    def __call__(self, y_proba, y):
-        # device = y_proba.device
-        n_samples = y.size(0)
-        y_pred = torch.round(y_proba)
-        y_conf = y_proba
-        y_conf[y_pred==0] = 1-y_conf[y_pred==0]
-        #, y_pred = y_proba.max(-1)
-
-        # Eq. 3 from Guo paper
-        ece = 0
-        for bin_lower, bin_upper in zip(self.bin_lowers, self.bin_uppers):
-            idx_bin = (y_conf > bin_lower) & (y_conf <= bin_upper)
-            n_bin = sum(idx_bin).float()
-
-            if n_bin > 0:
-                acc_bin = torch.mean((y_pred[idx_bin] == y[idx_bin]).float())
-                mean_conf_bin = torch.mean(y_conf[idx_bin])
-
-                ece += n_bin * torch.abs(acc_bin - mean_conf_bin)
-
-        return ece.item()/n_samples
 
 
-ece_cri = ExpectedCalibrationErrorSigmoid()
 
 def test(theta, X_test, y_test):
     model_w = theta
@@ -152,7 +68,6 @@ def test(theta, X_test, y_test):
     pred = torch.round(prob)
     ll = torch.log(prob[y_test==1]).sum() + torch.log(1-prob[y_test==0]).sum()
     acc = torch.mean((pred.eq(y_test)).float())
-    ece_o = ece_cri(prob,y_test)
     print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
 
 
@@ -164,7 +79,6 @@ def test_hir(theta, X_test, y_test):
     pred = torch.round(prob)
     ll = torch.log(prob[y_test==1]).sum() + torch.log(1-prob[y_test==0]).sum()
     acc = torch.mean((pred.eq(y_test)).float())
-    ece_o = ece_cri(prob,y_test)
     print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
 
 
@@ -225,3 +139,21 @@ class BayesianNN:
             model_gamma) + self.lambda_prior.log_prob(model_lambda)
         log_p = log_p0 + log_p_data * (self.X_train.shape[0] / self.batch_size)  # (8) in paper
         return log_p
+
+    def test(self, theta, X_test, y_test):
+        prob = self.forward(X_test, theta)
+        y_pred = prob.mean(dim=0)  # Average among outputs from different network parameters(particles)
+
+        model_gamma = torch.exp(theta[:, -2])
+
+        prob = []
+        
+        model_gamma_repeat = model_gamma.unsqueeze(1).repeat(1, y_pred.shape[0])
+        distribution = Normal(y_pred, torch.sqrt(torch.ones_like(model_gamma_repeat) / model_gamma_repeat))
+        log_p_data = ((distribution.log_prob(y_test).exp().mean(0)).log()).mean()
+
+
+        rmse = torch.norm(y_pred - y_test) / math.sqrt(y_test.shape[0])
+
+        #print("RMSE: {}, LL: {}".format(rmse,log_p_data))
+        return rmse,log_p_data
