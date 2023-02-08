@@ -24,10 +24,8 @@
 
    .. autosummary::
    
-      BNN
       BayesianLR
       BayesianNN
-      ExpectedCalibrationErrorSigmoid
       tasks
    
    

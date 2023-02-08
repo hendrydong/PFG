@@ -11,23 +11,74 @@ Welcome to PFG's documentation!
    :caption: Contents:
 
 Introduction
-============
+------------
 
-Intro
+Preconditioned functional gradient flow (PFG) is a particle-based sampling framework, which aims to minimize the KL divergence between particle samples and the target distribution with the gradient flow estimates within a parametric function class.
 
-.. autosummary::
-  :toctree: _autosummary
 
-   pfg.tasks
-   pfg.sampler
+Installation
+------------
+
+Install the requirements with ::
+
+   pip install -r requirements.txt
+
+
+This package can be be installed from sources with the following command::
+
+    python setup.py install
+
+
+Description
+------------
+
+In this work, we mainly have two parts to construct our package: ``pfg.sampler`` and ``pfg.tasks``
+
+
 
 API
-===
-.. automodule:: pfg
+------------
+
+.. toctree::
+   :maxdepth: 1
+   
+   api
+
+
+
+
+
+
+Citing
+------
+
+If this software is useful for you, please consider citing
+`our paper <https://arxiv.org/abs/2211.13954>`_ that describes
+the PFG framework:
+
+.. code-block:: bibtex
+
+      @inproceedings{
+         dong2023particlebased,
+         title={Particle-based Variational Inference with Preconditioned Functional Gradient Flow},
+         author={Hanze Dong and Xi Wang and Yong Lin and Tong Zhang},
+         booktitle={International Conference on Learning Representations},
+         year={2023},
+         url={https://openreview.net/forum?id=6OphWWAE3cS}
+      }
+
+
+Support
+-------
+
+If you are having issues, please let us know and send email to hdongaj AT ust.hk.
+
+
+
 
 Indices and tables
-==================
+------------
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
+

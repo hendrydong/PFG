@@ -14,7 +14,6 @@ from sklearn.datasets import load_svmlight_file
 from scipy.sparse import csr_matrix
 import time
 import sys
-sys.path.append('../')
 from pfg.precondition import Pred
 from pfg.tasks import BayesianLR
 from pfg import sampler
@@ -116,7 +115,7 @@ def main():
 
     
 
-    activation = nn.Sigmoid()#nn.Softsign()#nn.Tanh()
+    activation = nn.Sigmoid()
 
     net = nn.Sequential(nn.Linear(n_features,h),activation,nn.Linear(h,h),activation,nn.Linear(h,n_features)).to(device)
 

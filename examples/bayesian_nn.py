@@ -15,10 +15,9 @@ from torch import optim
 from torch.optim import Adam
 import sys
 
-sys.path.append('../')
 from pfg.tasks import BayesianNN
 from pfg import sampler
-from pfg.precondition import Pred
+
 
 import pandas
 

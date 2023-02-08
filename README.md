@@ -1,6 +1,6 @@
 # PFG: Preconditioned Functional Gradient Flow
 
-> This repository contains the codes for [Particle-based Variational Inference with Preconditioned Functional Gradient Flow]()  
+> This repository contains the codes for [Particle-based Variational Inference with Preconditioned Functional Gradient Flow](https://arxiv.org/abs/2211.13954)  
 by Hanze Dong, Xi Wang, Yong Lin, Tong Zhang.
 
 
@@ -11,6 +11,13 @@ Our code works with the following environment.
 `notebook`
 
 `torch`
+
+### Installation
+
+```
+python setup.py install
+```
+
 
 
 ## Data preparation
