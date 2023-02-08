@@ -54,6 +54,9 @@
 </div>
 <div class="section" id="description">
 <h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p>In this work, we mainly have two parts to construct our package: <code class="docutils literal notranslate"><span class="pre">pfg.sampler</span></code> and <code class="docutils literal notranslate"><span class="pre">pfg.tasks</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pfg.tasks</span></code> defines the unnormalized log posterior density conditioned on a dataset, where the log density can be queried by subsampling (stochastic estimation).</p>
+<p><code class="docutils literal notranslate"><span class="pre">pfg.sampler</span></code> contains the particle samplers, including PFG, SVGD, SGLD. Given an unnormalized density, the sampler will produce several sample particles from the corresponding distribution.</p>
 </div>
 <div class="section" id="api">
 <h2>API<a class="headerlink" href="#api" title="Permalink to this heading">¶</a></h2>

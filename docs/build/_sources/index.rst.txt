@@ -32,6 +32,14 @@ This package can be be installed from sources with the following command::
 Description
 ------------
 
+In this work, we mainly have two parts to construct our package: ``pfg.sampler`` and ``pfg.tasks``.
+
+``pfg.tasks`` defines the unnormalized log posterior density conditioned on a dataset, where the log density can be queried by subsampling (stochastic estimation).
+
+
+``pfg.sampler`` contains the particle samplers, including PFG, SVGD, SGLD. Given an unnormalized density, the sampler will produce several sample particles from the corresponding distribution.
+
+
 
 API
 ------------
