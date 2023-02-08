@@ -7,3 +7,4 @@ toy_examples/ill_Gaussian-Copy1.ipynb
 *.pyc
 build
 pfg.egg-info
+dist
