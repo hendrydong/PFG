@@ -5,3 +5,5 @@ toy_examples/Gaussian_mixture_10-Copy1.ipynb
 toy_examples/ill_Gaussian-Copy1.ipynb
 *.zip
 *.pyc
+build
+pfg.egg-info
