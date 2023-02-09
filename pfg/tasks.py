@@ -1,3 +1,8 @@
+"""
+The Bayesian sampling tasks are defined here, such as Bayesian Logistic Regression, Bayesian Neural Networks.
+"""
+
+
 from turtle import forward
 import torch
 import numpy as np
@@ -33,19 +38,19 @@ class tasks:
 
 
 class BayesianLR:
-    def __init__(self, X_train, y_train, batch_size, num_particles, sigma=1, device='cpu'):
-        """
-        Implement Bayesian Logistic Regression. The prior of 
+    """
+    Implement Bayesian Logistic Regression (Gaussian Prior).
 
-        Args:
-            X_train: input (feature) tensor
-            y_train: output (label) tensor
-            batch_size: batch size when querying likelihood 
-            num_particles: the number of particle samples
-            sigma: 
-        """
+    Args:
+        X_train: input (feature) tensor
+        y_train: output (label) tensor
+        batch_size: batch size when querying likelihood 
+        num_particles: the number of particle samples
+        sigma: std of the prior distribution
+    """
+    def __init__(self, X_train, y_train, batch_size, num_particles, sigma=1, device='cpu'):
+
         # PyTorch Gamma is slightly different from numpy Gamma
-        self.alpha_prior = Gamma(torch.tensor(1., device=device), torch.tensor(sigma, device=device))
         self.sigma = sigma
         self.X_train = X_train
         self.y_train = y_train
@@ -79,41 +84,21 @@ class BayesianLR:
 
 
 
-def test(theta, X_test, y_test):
-    model_w = theta
-    logits = torch.matmul(X_test, model_w.t())
-    prob = torch.sigmoid(logits).mean(dim=1)  # Average among outputs from different network parameters(particles)
-    pred = torch.round(prob)
-    ll = torch.log(prob[y_test==1]).sum() + torch.log(1-prob[y_test==0]).sum()
-    acc = torch.mean((pred.eq(y_test)).float())
-    print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
-
-
-
-def test_hir(theta, X_test, y_test):
-    model_w = theta[:, :-1]
-    logits = torch.matmul(X_test, model_w.t())
-    prob = torch.sigmoid(logits).mean(dim=1)  # Average among outputs from different network parameters(particles)
-    pred = torch.round(prob)
-    ll = torch.log(prob[y_test==1]).sum() + torch.log(1-prob[y_test==0]).sum()
-    acc = torch.mean((pred.eq(y_test)).float())
-    print("Accuracy: {}".format(acc), "NLL: {}".format(-ll/X_test.shape[0]), "ECE: {}".format(ece_o))
-
-
 
 
 class BayesianNN:
-    def __init__(self, X_train, y_train, batch_size, num_particles, hidden_dim, device='cpu'):
-        """
-        Implement Bayesian Neural Networks (MLP).
+    """
+    Implement Bayesian Neural Networks (MLP).
 
-        Args:
-            X_train: input (feature) tensor
-            y_train: output (label) tensor
-            batch_size: batch size when querying likelihood 
-            num_particles: the number of particle samples
-            hidden_dim: the number of MLP hidden dimension 
-        """
+    Args:
+        X_train: input (feature) tensor
+        y_train: output (label) tensor
+        batch_size: batch size when querying likelihood 
+        num_particles: the number of particle samples
+        hidden_dim: the number of MLP hidden dimension 
+    """
+    def __init__(self, X_train, y_train, batch_size, num_particles, hidden_dim, device='cpu'):
+
         self.gamma_prior = Gamma(torch.tensor(1., device=device),
                                  torch.tensor(1 / 0.1, device=device))
         self.lambda_prior = Gamma(torch.tensor(1., device=device),

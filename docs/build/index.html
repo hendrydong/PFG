@@ -58,6 +58,47 @@
 <p><code class="docutils literal notranslate"><span class="pre">pfg.tasks</span></code> defines the unnormalized log posterior density conditioned on a dataset, where the log density can be queried by subsampling (stochastic estimation).</p>
 <p><code class="docutils literal notranslate"><span class="pre">pfg.sampler</span></code> contains the particle samplers, including PFG, SVGD, SGLD. Given an unnormalized density, the sampler will produce several sample particles from the corresponding distribution.</p>
 </div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<p>To use our code, we provide a standard procedure to use PFG framework to obtain particle samples</p>
+<p><strong>Step 1:</strong>
+Import data <code class="docutils literal notranslate"><span class="pre">X_train</span></code> and <code class="docutils literal notranslate"><span class="pre">y_train</span></code>;</p>
+<p><strong>Step 2:</strong>
+Construct a model by feeding data to a task, e.g. Bayesian Neural Networks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">pfg</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">BayesianNN</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span>
+                                 <span class="n">num_particles</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Step 3:</strong>
+Initialize a sampler trainer.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize particles</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># For PFG, we have to define the function class first</span>
+<span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_features</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span>
+                     <span class="n">activation</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span>
+                     <span class="n">activation</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">n_features</span><span class="p">))</span>
+
+<span class="c1"># Define trainer</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">PFG</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">lr</span><span class="p">,</span> <span class="n">net</span><span class="p">,</span> <span class="n">optim</span> <span class="o">=</span> <span class="n">opt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Step 4:</strong>
+Train a sampler.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ITERATION</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+   <span class="n">trainer</span><span class="o">.</span><span class="n">compute_grad</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+   <span class="n">trainer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Step 5:</strong>
+Return particles <code class="docutils literal notranslate"><span class="pre">theta</span></code>.</p>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<p>We provide several examples to show how to use our package in your problem.</p>
+<p>You may refer to <code class="docutils literal notranslate"><span class="pre">examples/</span></code> for more details.</p>
+</div>
 <div class="section" id="api">
 <h2>API<a class="headerlink" href="#api" title="Permalink to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">

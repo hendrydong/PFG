@@ -3,7 +3,7 @@ API at a glance
 
 
 .. autosummary::
-  :toctree: _autosummary
+  :toctree: 
 
    pfg.tasks
    pfg.sampler

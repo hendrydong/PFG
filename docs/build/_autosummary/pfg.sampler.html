@@ -16,7 +16,6 @@
     <script src="../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="pfg.tasks" href="pfg.tasks.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -35,6 +34,7 @@
             
   <div class="section" id="module-pfg.sampler">
 <span id="pfg-sampler"></span><h1>pfg.sampler<a class="headerlink" href="#module-pfg.sampler" title="Permalink to this heading">¶</a></h1>
+<p>The particle samplers are included here, e.g., SGLD, SVGD, PFG.</p>
 <p class="rubric">Functions</p>
 <table class="autosummary longtable docutils align-default">
 <colgroup>
@@ -43,7 +43,7 @@
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_logp_gradient</span></code>(model, inputs)</p></td>
-<td><p>Get $ abla log p$ from model with batch inputs</p></td>
+<td><p>Get log p gradient from model with batch inputs</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_svgd_gradient</span></code>(model, inputs)</p></td>
 <td><p>Get functional gradient in SVGD algorithm.</p></td>
@@ -90,16 +90,14 @@
 
 
 <h3>Navigation</h3>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="pfg.tasks.html">pfg.tasks</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">pfg.sampler</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API at a glance</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="pfg.tasks.html" title="previous chapter">pfg.tasks</a></li>
   </ul></li>
 </ul>
 </div>

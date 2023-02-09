@@ -1,3 +1,8 @@
+"""
+The particle samplers are included here, e.g., SGLD, SVGD, PFG.
+"""
+
+
 import torch
 from torch.distributions import Normal
 from torch.optim.optimizer import Optimizer, required
@@ -7,7 +12,7 @@ from pfg.utils import kernel_rbf, divergence_bf,divergence_approx
 
 
 def get_logp_gradient(model, inputs):
-    """Get $\nabla \log p$ from model with batch inputs
+    """Get log p gradient from model with batch inputs
 
     Args:
         model: probablistic model with log_prob attribute

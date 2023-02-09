@@ -1,31 +1,22 @@
 import math
 from multiprocessing.spawn import import_main_path
 import numpy as np
-import random
 import torch
-from torch.optim import Adam
-from torch.distributions import Normal
-from torch.distributions.gamma import Gamma
 from sklearn.model_selection import train_test_split
-
 from torch import nn
 import torch.nn.functional as F
 import argparse
-from torch import optim
-from torch.optim import Adam
-import sys
-
 from pfg.tasks import BayesianNN
 from pfg import sampler
-
-
 import pandas
 
+
+
+# Define and parse the command line arguments
 parser = argparse.ArgumentParser('Bayesian Neural Network')
 parser.add_argument(
     '--data', type=str, default='boston'
 )
-
 parser.add_argument('--seed', type=int, default=42)
 parser.add_argument('--hdim', type=int, default=32)
 parser.add_argument('--inner_iter', type=int, default=1)
@@ -33,27 +24,27 @@ parser.add_argument('--num_particles', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=1000)
 parser.add_argument('--iteration', type=int, default=20000)
 parser.add_argument('--warmup_iteration', type=int, default=100)
-
 parser.add_argument('--f0_coef', type=float, default=0.1)
 parser.add_argument('--exp_alpha', type=float, default=0.5)
 parser.add_argument('--lr', type=float, default=0.005)
 parser.add_argument('--lr_f', type=float, default=1e-3)
 parser.add_argument('--H_coef', type=float, default=0.1)
 parser.add_argument('--sigma0', type=float, default=1)
-
 parser.add_argument('--adam', type=bool, default=0)
 
 
 args = parser.parse_args()
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-sigma0 = args.sigma0
 
+# Determine the device to run the code on (GPU or CPU)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Load other arguments
+sigma0 = args.sigma0
 lr = args.lr_f
 lr0 = args.lr
 h = args.hdim
 N = args.inner_iter
 num_particles = args.num_particles
-
 data_name = args.data
 
 
@@ -61,6 +52,7 @@ data_name = args.data
 
 
 def main():
+    # Load the data and prepares it for training.
     if data_name =='boston':
         data = np.loadtxt('../data/boston_housing')
     elif data_name =='concrete':
@@ -105,7 +97,7 @@ def main():
          torch.log(0.1 * torch.ones([num_particles, 2], device=device))], dim=1)
 
     n_features = theta.shape[1]
-    activation = nn.Sigmoid()  # nn.Softsign()#nn.Tanh()
+    activation = nn.Sigmoid()  
     net = nn.Sequential(nn.Linear(n_features, h), activation, nn.Linear(h, h),
                         activation, nn.Linear(h, n_features)).to(device)
     if not args.adam:

@@ -40,6 +40,61 @@ In this work, we mainly have two parts to construct our package: ``pfg.sampler``
 ``pfg.sampler`` contains the particle samplers, including PFG, SVGD, SGLD. Given an unnormalized density, the sampler will produce several sample particles from the corresponding distribution.
 
 
+Usage
+------------
+
+To use our code, we provide a standard procedure to use PFG framework to obtain particle samples
+
+**Step 1:** 
+Import data ``X_train`` and ``y_train``;
+
+
+**Step 2:** 
+Construct a model by feeding data to a task, e.g. Bayesian Neural Networks.
+
+.. code-block:: python
+
+   model = pfg.tasks.BayesianNN(X_train, y_train, batch_size,
+                                    num_particles, hidden_dim)
+
+**Step 3:**   
+Initialize a sampler trainer.
+
+.. code-block:: python
+
+   # Initialize particles
+   theta = torch.randn(...)
+
+   # For PFG, we have to define the function class first
+   activation = nn.Sigmoid()
+   net = nn.Sequential(nn.Linear(n_features, h), 
+                        activation, nn.Linear(h, h),
+                        activation, nn.Linear(h, n_features)) 
+
+   # Define trainer
+   trainer = sampler.PFG(theta, lr, net, optim = opt)
+
+
+**Step 4:**   
+Train a sampler.
+
+.. code-block:: python
+
+   for epoch in range(ITERATION+1):    
+      trainer.compute_grad(model)
+      trainer.step()
+
+
+**Step 5:**   
+Return particles ``theta``.
+
+
+Examples
+------------
+We provide several examples to show how to use our package in your problem.
+
+You may refer to ``examples/`` for more details.
+
 
 API
 ------------
