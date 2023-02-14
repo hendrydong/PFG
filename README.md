@@ -4,6 +4,8 @@
 by Hanze Dong, Xi Wang, Yong Lin, Tong Zhang.
 
 
+Docs can be found in `build/index.html`.
+
 ## Setup
 
 Our code works with the following environment.
