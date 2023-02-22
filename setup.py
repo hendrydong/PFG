@@ -10,11 +10,6 @@ __version__ = None
 with open(version_path) as f:
   exec(f.read(), globals())
 
-req_path = os.path.join(folder, "requirements.txt")
-install_requires = []
-if os.path.exists(req_path):
-  with open(req_path) as fp:
-    install_requires = [line.strip() for line in fp]
 
 readme_path = os.path.join(folder, "README.md")
 readme_contents = ""
@@ -31,7 +26,7 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(),
     package_data={},
-    install_requires=install_requires,
+    install_requires=[],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",

@@ -17,6 +17,7 @@ Our code works with the following environment.
 ### Installation
 
 ```
+pip install -r requirements.txt
 python setup.py install
 ```
 

@@ -14,11 +14,12 @@ jobs:
           python _setup.py install
       - name: Sphinx build
         run: |
-          sphinx-build ./docs/source .
+          sphinx-build doc _build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+          publish_dir: _build/
           force_orphan: true
