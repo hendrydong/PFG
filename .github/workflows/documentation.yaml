@@ -20,6 +20,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
           force_orphan: true
-
-
-          actions/checkout@v2, actions/setup-python@v2
