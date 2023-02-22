@@ -4,7 +4,7 @@
 by Hanze Dong, Xi Wang, Yong Lin, Tong Zhang.
 
 
-Docs can be found in `build/index.html`.
+Docs can be found in https://hendrydong.github.io/PFG.
 
 ## Setup
 

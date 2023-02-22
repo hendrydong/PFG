@@ -8,3 +8,4 @@ toy_examples/ill_Gaussian-Copy1.ipynb
 build
 pfg.egg-info
 dist
+_build
