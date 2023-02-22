@@ -11,7 +11,7 @@ jobs:
           pip install sphinx sphinx_rtd_theme
       - name: Install current pkg          
         run: |
-          python _setup.py install
+          python setup.py install
       - name: Sphinx build
         run: |
           sphinx-build doc _build
