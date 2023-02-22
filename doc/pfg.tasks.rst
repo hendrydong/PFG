@@ -9,6 +9,13 @@
 
    
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      test
+      test_hir
+   
    
 
    
