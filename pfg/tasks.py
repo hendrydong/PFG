@@ -7,9 +7,6 @@ from turtle import forward
 import torch
 import numpy as np
 import random
-import scipy.io
-from torch.nn import BCEWithLogitsLoss
-from torch.optim import Adam,SGD
 from torch.distributions import Normal,Bernoulli
 from torch.distributions.gamma import Gamma
 from sklearn.model_selection import train_test_split

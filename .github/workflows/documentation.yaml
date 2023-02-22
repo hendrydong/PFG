@@ -9,6 +9,15 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sphinx 
+      - name: Install torch       
+        run: |
+          pip install torch 
+      - name: Install sklearn       
+        run: |
+          pip install scikit_learn 
+      - name: Install numpy       
+        run: |
+          pip install numpy 
       - name: Install current pkg          
         run: |
           python setup.py install
