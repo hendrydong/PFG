@@ -9,6 +9,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sphinx 
+      - name: Install theme
+        run: |
+          pip install pydata-sphinx-theme 
       - name: Install torch       
         run: |
           pip install torch 
